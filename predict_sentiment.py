@@ -13,7 +13,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 print(f"사용 중인 디바이스: {device}")
 
-# 감성 예측 함수 (공포/탐욕 반영)
+# 감성 예측 함수 (공포/탐욕 반영 및 logits 출력 추가)
 def predict_sentiment(text):
     inputs = tokenizer(
         text,
@@ -27,12 +27,15 @@ def predict_sentiment(text):
     
     with torch.no_grad():
         outputs = model(**inputs)
-        probs = torch.nn.functional.softmax(outputs.logits, dim=-1)
+        logits = outputs.logits  # 원본 logits 출력
+        probs = torch.nn.functional.softmax(logits, dim=-1)
         sentiment_score = probs[0][1].item()  # 긍정 확률을 감정 점수로 활용
     
-    if sentiment_score > 0.7:
+    print(f"문장: {text} | Logits: {logits.tolist()} | 감정 점수: {sentiment_score:.4f}")
+    
+    if sentiment_score > 0.75:
         return "탐욕"
-    elif sentiment_score < 0.3:
+    elif sentiment_score < 0.25:
         return "공포"
     else:
         return "중립"
