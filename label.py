@@ -8,19 +8,21 @@ tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2)  # 긍정/부정 2개 클래스
 model.eval()
 
-# 감성 분석 함수 (3분류 적용)
+# 감성 분석 함수 (공포/탐욕 추가 반영)
 def predict_sentiment(text):
     inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True)
     with torch.no_grad():
         outputs = model(**inputs)
     
     probs = torch.nn.functional.softmax(outputs.logits, dim=-1)
-    confidence = torch.abs(probs[0][0] - probs[0][1]).item()  # 감성 차이 계산
-    label = torch.argmax(probs).item()
+    sentiment_score = probs[0][1].item()  # 긍정 확률을 감정 점수로 활용
     
-    if confidence < 0.2:  # 감성 차이가 0.2 미만이면 중립 처리
+    if sentiment_score > 0.7:
+        return "탐욕"
+    elif sentiment_score < 0.3:
+        return "공포"
+    else:
         return "중립"
-    return "긍정" if label == 1 else "부정"
 
 # 1️⃣ 크롤링한 CSV 파일 불러오기
 input_file = "cleaned_data.csv"  # 크롤링한 데이터 파일 경로
